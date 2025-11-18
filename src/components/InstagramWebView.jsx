@@ -5,35 +5,31 @@ import ErrorMessage from './ErrorMessage';
 const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
   const [loadingState, setLoadingState] = useState('loading');
   const [error, setError] = useState(null);
-  const [timeoutReached, setTimeoutReached] = useState(false);
   const timeoutRef = useRef(null);
   const iframeRef = useRef(null);
 
-  // Use Instagram's embed endpoint which allows iframe embedding
+  // Use Instagram's embed endpoint
   const instagramUrl = `https://www.instagram.com/${username}/embed/`;
 
   useEffect(() => {
     // Reset state when username changes
     setLoadingState('loading');
     setError(null);
-    setTimeoutReached(false);
 
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set 15-second timeout to detect load failures
+    // Set 5-second timeout to detect load failures
     timeoutRef.current = setTimeout(() => {
-      setTimeoutReached(true);
       setLoadingState('error');
-      setError('Loading is taking longer than expected. The profile may not be available');
-      console.error('Instagram iframe load timeout after 15 seconds');
+      setError('Instagram profile embedding is not available. Click below to view the profile directly on Instagram.');
       
       if (onError) {
         onError(new Error('Load timeout'));
       }
-    }, 15000);
+    }, 5000);
 
     // Cleanup timeout on unmount or username change
     return () => {
@@ -44,8 +40,6 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
   }, [username, onError]);
 
   const handleIframeLoad = () => {
-    console.log('Instagram iframe loaded successfully');
-    
     // Clear timeout on successful load
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -53,7 +47,6 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
 
     setLoadingState('success');
     setError(null);
-    setTimeoutReached(false);
 
     if (onLoad) {
       onLoad();
@@ -78,7 +71,6 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
   const handleRetry = () => {
     setLoadingState('loading');
     setError(null);
-    setTimeoutReached(false);
 
     // Force iframe reload by updating key
     if (iframeRef.current) {
@@ -87,13 +79,9 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
 
     // Set new timeout
     timeoutRef.current = setTimeout(() => {
-      if (loadingState === 'loading') {
-        setTimeoutReached(true);
-        setLoadingState('error');
-        setError('Loading is taking longer than expected. The profile may not be available');
-        console.error('Instagram iframe load timeout after 10 seconds');
-      }
-    }, 10000);
+      setLoadingState('error');
+      setError('Loading is taking longer than expected. The profile may not be available');
+    }, 15000);
   };
 
   return (
@@ -129,11 +117,14 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
 
       {/* Iframe using Instagram's embed endpoint */}
       <iframe
+        key={username}
         ref={iframeRef}
         src={instagramUrl}
         onLoad={handleIframeLoad}
         onError={handleIframeError}
         allow="encrypted-media"
+        loading="eager"
+        referrerPolicy="no-referrer-when-downgrade"
         style={{
           width: '100%',
           height: '100%',

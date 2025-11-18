@@ -26,7 +26,7 @@ function App() {
       <div className="max-w-[1200px] mx-auto px-4 py-6 md:px-6 md:py-8">
         {/* Header with title and theme toggle */}
         <header className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-center md:text-left text-pink-600 dark:text-pink-400">
+          <h1 className="text-3xl md:text-4xl font-bold text-center md:text-left text-black dark:text-white">
             Instagram Profile Viewer
           </h1>
           <ThemeToggle />
