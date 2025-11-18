@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import InstagramWebView from './components/InstagramWebView';
+import InstagramProxyView from './components/InstagramProxyView';
 import SearchForm from './components/SearchForm';
 import ThemeToggle from './components/ThemeToggle';
+import ViewModeToggle from './components/ViewModeToggle';
 import DeviceFrame from './components/DeviceFrame';
 
 function App() {
   const [username, setUsername] = useState('instagram');
   const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('embed'); // 'embed' or 'proxy'
 
   const handleSearch = (searchUsername) => {
     setUsername(searchUsername);
@@ -19,6 +22,11 @@ function App() {
 
   const handleError = () => {
     setIsLoading(false);
+  };
+
+  const handleModeChange = (mode) => {
+    setViewMode(mode);
+    setIsLoading(true);
   };
 
   return (
@@ -34,7 +42,7 @@ function App() {
         </header>
 
         {/* Search form */}
-        <div className="mb-8">
+        <div className="mb-6">
           <SearchForm 
             onSearch={handleSearch} 
             isLoading={isLoading}
@@ -42,19 +50,35 @@ function App() {
           />
         </div>
 
+        {/* View Mode Toggle */}
+        <div className="mb-8 flex justify-center">
+          <ViewModeToggle mode={viewMode} onModeChange={handleModeChange} />
+        </div>
+
         {/* Instagram WebView in Device Frame */}
         <DeviceFrame>
-          <InstagramWebView 
-            username={username} 
-            style={{ height: '100%', width: '100%' }}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
+          {viewMode === 'embed' ? (
+            <InstagramWebView 
+              username={username} 
+              style={{ height: '100%', width: '100%' }}
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          ) : (
+            <InstagramProxyView 
+              username={username} 
+              style={{ height: '100%', width: '100%' }}
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          )}
         </DeviceFrame>
         
         {/* Footer note */}
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-6 transition-colors duration-300">
-          Note: This is an embedded view of Instagram. Some content may not be available due to browser restrictions.
+          {viewMode === 'embed' 
+            ? 'Note: Embed mode shows limited posts. Switch to Proxy mode for full profile access.'
+            : 'Note: Proxy mode requires the backend server to be running (npm run server).'}
         </p>
       </div>
     </div>
