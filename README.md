@@ -10,17 +10,28 @@ Instagram Profile Viewer is a lightweight, high-performance React application th
 
 ### Core Functionality
 - **Profile Search & Discovery** - Search any public Instagram profile with real-time validation
-- **Embedded Profile Viewer** - View Instagram content directly within the application
+- **Dual Viewing Modes** - Switch between embedded viewer and full proxy mode
+- **Device Frame Mockups** - View profiles in realistic laptop and mobile device frames
 - **Intelligent Loading States** - Smooth transitions with visual feedback during content loading
+
+### Viewing Modes
+- **Embed Mode** - Fast, lightweight Instagram embed integration
+- **Proxy Mode** - Full Instagram profile rendering via Puppeteer with base64 image embedding
+  - Bypasses Instagram CDN restrictions by converting images to base64 data URLs
+  - Removes login modals and popups for uninterrupted viewing
+  - Renders complete profile with all posts and content
 
 ### User Experience
 - **Adaptive Theme System** - Toggle between light and dark modes with automatic preference persistence
 - **Responsive Design** - Optimized layouts for mobile, tablet, and desktop viewports
+- **Device Frames** - Realistic laptop and mobile mockups for professional presentation
 - **Accessible Interface** - WCAG-compliant components with proper ARIA labels and keyboard navigation
 - **Input Validation** - Real-time username validation with helpful error messages
 
 ### Technical Highlights
 - **Lightning-Fast Performance** - Powered by Vite for instant hot module replacement
+- **Puppeteer Integration** - Headless browser automation for full profile scraping
+- **Base64 Image Embedding** - Converts Instagram CDN images to embedded data URLs to bypass 403 errors
 - **Modern React Architecture** - Built with React 18 and functional components with hooks
 - **Utility-First Styling** - Tailwind CSS v4 for maintainable and scalable styles
 - **State Management** - Context API for global theme state with localStorage persistence
@@ -46,17 +57,25 @@ Instagram Profile Viewer is a lightweight, high-performance React application th
    ```bash
    npm install
    ```
-   This will install all required packages including React, Vite, Tailwind CSS, and development dependencies.
+   This will install all required packages including React, Vite, Tailwind CSS, Puppeteer, and development dependencies.
 
 ### Development
 
-Start the development server with hot module replacement:
+**Important:** This application requires two servers to run:
 
-```bash
-npm run dev
-```
+1. **Start the proxy server** (for full profile viewing):
+   ```bash
+   npm run server
+   ```
+   The proxy server will run on `http://localhost:5000`
 
-The application will be available at `http://localhost:3000`
+2. **Start the development server** (in a new terminal):
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:3000`
+
+**Note:** The embed mode works without the proxy server, but proxy mode requires both servers running.
 
 ### Production Build
 
@@ -86,10 +105,17 @@ npm run lint
 - **[React 18](https://reactjs.org/)** - Modern JavaScript library for building user interfaces with concurrent features
 - **[Vite 4](https://vitejs.dev/)** - Next-generation frontend build tool with lightning-fast HMR
 
+### Backend & Automation
+- **[Express](https://expressjs.com/)** - Fast, minimalist web framework for Node.js
+- **[Puppeteer](https://pptr.dev/)** - Headless Chrome automation for web scraping
+- **[CORS](https://www.npmjs.com/package/cors)** - Cross-origin resource sharing middleware
+- **[node-fetch](https://www.npmjs.com/package/node-fetch)** - Fetch API implementation for Node.js
+
 ### Styling & UI
 - **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS framework for rapid UI development
 - **[PostCSS](https://postcss.org/)** - CSS transformation and optimization
 - **Custom Design System** - Consistent color palette and spacing for light/dark themes
+- **Device Frames** - Realistic laptop and mobile mockups
 
 ### State Management
 - **React Context API** - Lightweight global state management for theme preferences
@@ -105,11 +131,14 @@ npm run lint
 instagram-profile-viewer/
 ├── src/
 │   ├── components/       # React components
+│   │   ├── DeviceFrame.jsx
 │   │   ├── ErrorMessage.jsx
+│   │   ├── InstagramProxyView.jsx
 │   │   ├── InstagramWebView.jsx
 │   │   ├── LoadingSpinner.jsx
 │   │   ├── SearchForm.jsx
-│   │   └── ThemeToggle.jsx
+│   │   ├── ThemeToggle.jsx
+│   │   └── ViewModeToggle.jsx
 │   ├── contexts/         # React contexts
 │   │   └── ThemeContext.jsx
 │   ├── hooks/            # Custom hooks
@@ -119,6 +148,7 @@ instagram-profile-viewer/
 │   ├── App.jsx           # Main App component
 │   ├── index.css         # Global styles
 │   └── index.js          # Application entry point
+├── server.js             # Express + Puppeteer proxy server
 ├── .gitignore
 ├── index.html
 ├── package.json
@@ -134,7 +164,26 @@ instagram-profile-viewer/
 
 1. **Enter Username** - Type an Instagram username in the search field (e.g., "instagram", "cristiano")
 2. **Submit Search** - Click the "Search" button or press Enter
-3. **View Content** - The embedded Instagram profile will load with available posts and information
+3. **View Content** - The Instagram profile will load in the selected viewing mode
+
+### Viewing Modes
+
+- **Embed Mode** - Fast, lightweight Instagram embed (default)
+  - Quick loading
+  - Lower resource usage
+  - Works without proxy server
+  
+- **Proxy Mode** - Full profile rendering with Puppeteer
+  - Complete profile with all posts
+  - No login popups or restrictions
+  - Images embedded as base64 to bypass CDN restrictions
+  - Requires proxy server running (`npm run server`)
+
+### Device Frames
+
+- **Laptop View** - Professional MacBook-style frame for desktop presentation
+- **Mobile View** - iPhone-style frame for mobile presentation
+- Toggle between frames using the device icons in the header
 
 ### Theme Customization
 
@@ -156,12 +205,22 @@ If a profile fails to load:
 #### Core Components
 - **`App.jsx`** - Main application container with state management and layout orchestration
 - **`InstagramWebView.jsx`** - Embedded iframe viewer with intelligent loading detection and error handling
+- **`InstagramProxyView.jsx`** - Full profile viewer using Puppeteer proxy with base64 image embedding
 - **`SearchForm.jsx`** - Controlled form component with real-time validation and accessibility features
 
 #### UI Components
+- **`DeviceFrame.jsx`** - Realistic device mockups (laptop and mobile) for professional presentation
+- **`ViewModeToggle.jsx`** - Switch between embed and proxy viewing modes
 - **`ThemeToggle.jsx`** - Theme switcher with animated icons and ARIA labels
 - **`LoadingSpinner.jsx`** - Reusable loading indicator with customizable size and messaging
 - **`ErrorMessage.jsx`** - Error display component with retry functionality and user-friendly messages
+
+#### Backend
+- **`server.js`** - Express server with Puppeteer integration
+  - Instagram profile scraping with headless Chrome
+  - Base64 image conversion to bypass CDN restrictions
+  - Login modal removal and content cleanup
+  - CORS-enabled proxy endpoints
 
 #### Context & Hooks
 - **`ThemeContext.jsx`** - Global theme state provider with localStorage integration
@@ -171,24 +230,43 @@ If a profile fails to load:
 ## Important Notes
 
 ### Instagram Integration
-- This application uses Instagram's embed endpoint (`/embed/`) for profile viewing
-- Content availability depends on Instagram's API and embedding policies
+
+**Embed Mode:**
+- Uses Instagram's official embed endpoint (`/embed/`)
+- Content availability depends on Instagram's embedding policies
 - Some profiles may have restricted embedding capabilities
+
+**Proxy Mode:**
+- Uses Puppeteer to render full Instagram profiles
+- Converts images to base64 data URLs to bypass CDN 403 errors
+- Removes login modals and popups automatically
+- Requires proxy server running on port 5000
+
+### Image Loading Solution
+The proxy mode solves Instagram CDN restrictions by:
+1. Loading the profile in Puppeteer's authenticated browser context
+2. Converting all images to base64 data URLs using canvas
+3. Embedding images directly in HTML to eliminate external CDN requests
+4. This bypasses 403 Forbidden errors from Instagram's CDN
 
 ### Browser Compatibility
 - Modern browsers with ES6+ support are required
 - Cross-origin restrictions may apply based on browser security settings
 - localStorage must be enabled for theme persistence
+- Canvas API required for base64 image conversion
 
 ### Privacy & Security
 - No user data is collected or stored on external servers
 - Theme preferences are stored locally in the browser
+- Proxy server runs locally and doesn't store any data
 - All Instagram interactions occur through official Instagram domains
 
 ### Limitations
 - Private profiles require Instagram authentication
 - Embedding restrictions may vary by profile and content type
 - Network connectivity affects loading performance
+- Proxy mode has longer initial load time due to image conversion
+- Puppeteer requires Chrome/Chromium to be installed
 
 ## Contributing
 
