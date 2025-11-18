@@ -1,18 +1,19 @@
 # Instagram WebView
 
-A desktop application that displays Instagram profiles in a WebView, providing a mobile-like experience.
+A modern web application that displays Instagram profiles with a clean, responsive interface.
 
 ## Features
 
 - View public Instagram profiles
-- Mobile-optimized view
-- Cross-platform (Windows, macOS, Linux)
-- Simple and intuitive interface
+- Mobile-optimized responsive design
+- Fast development with Vite
+- Styled with Tailwind CSS
+- Built with React 18
 
 ## Prerequisites
 
-- Node.js 14.x or later
-- npm 6.x or later
+- Node.js 16.x or later
+- npm 8.x or later
 - Git (optional)
 
 ## Installation
@@ -28,19 +29,18 @@ A desktop application that displays Instagram profiles in a WebView, providing a
    npm install
    ```
 
-3. Install Tailwind CSS and its peer dependencies:
-   ```bash
-   npm install -D tailwindcss postcss autoprefixer
-   npx tailwindcss init -p
-   ```
-
 ## Running the Application
 
 ### Development Mode
 
-1. Start the development server and Electron app:
+1. Start the development server:
    ```bash
-   npm run electron-dev
+   npm run dev
+   ```
+
+2. Open your browser and navigate to:
+   ```
+   http://localhost:5173
    ```
 
 ### Building for Production
@@ -48,6 +48,41 @@ A desktop application that displays Instagram profiles in a WebView, providing a
 1. Build the application:
    ```bash
    npm run build
+   ```
+
+2. Preview the production build:
+   ```bash
+   npm run preview
+   ```
+
+## Technologies Used
+
+- [Vite](https://vitejs.dev/) - Next Generation Frontend Tooling
+- [React 18](https://reactjs.org/) - A JavaScript library for building user interfaces
+- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
+- [TypeScript](https://www.typescriptlang.org/) - TypeScript is a typed superset of JavaScript
+
+## Project Structure
+
+```
+instagram-webview/
+├── public/          # Static files
+├── src/             # Source files
+│   ├── components/  # React components
+│   ├── styles/      # Global styles
+│   ├── App.jsx      # Main App component
+│   └── main.jsx     # Application entry point
+├── .gitignore
+├── index.html
+├── package.json
+├── postcss.config.js
+├── tailwind.config.js
+└── vite.config.js
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
    npm run electron-build
    ```
 
