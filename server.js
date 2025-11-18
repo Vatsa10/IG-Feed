@@ -173,97 +173,10 @@ function rewriteHTML(html, baseUrl) {
     `<head><base href="${baseUrl}">`
   );
 
-  // Inject script to remove login modals and fix images on client side
+  // Inject script to remove login modals
   const modalRemovalScript = `
     <script>
-      // Proxy URL helper
-      const proxyUrl = (url) => {
-        if (!url || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://localhost')) return url;
-        if (url.startsWith('http')) {
-          return 'http://localhost:${PORT}/proxy?url=' + encodeURIComponent(url);
-        }
-        return url;
-      };
-      
-      // Fix images that failed to load
-      function fixImages() {
-        document.querySelectorAll('img').forEach(img => {
-          // Fix src
-          if (img.src && img.src.includes('instagram') && !img.src.includes('localhost')) {
-            const originalSrc = img.getAttribute('src');
-            if (originalSrc && originalSrc.startsWith('http') && !originalSrc.includes('localhost')) {
-              img.src = proxyUrl(originalSrc);
-            }
-          }
-          
-          // Fix srcset
-          if (img.srcset && img.srcset.includes('instagram')) {
-            const newSrcset = img.srcset.split(',').map(part => {
-              const trimmed = part.trim();
-              const spaceIndex = trimmed.lastIndexOf(' ');
-              if (spaceIndex > 0) {
-                const url = trimmed.substring(0, spaceIndex);
-                const descriptor = trimmed.substring(spaceIndex + 1);
-                if (url.includes('instagram') && !url.includes('localhost')) {
-                  return proxyUrl(url) + ' ' + descriptor;
-                }
-              } else if (trimmed.includes('instagram') && !trimmed.includes('localhost')) {
-                return proxyUrl(trimmed);
-              }
-              return part;
-            }).join(', ');
-            img.srcset = newSrcset;
-          }
-          
-          // Fix data-src (lazy loading)
-          if (img.dataset.src && img.dataset.src.includes('instagram') && !img.dataset.src.includes('localhost')) {
-            img.dataset.src = proxyUrl(img.dataset.src);
-            img.src = img.dataset.src;
-          }
-        });
-        
-        // Fix background images in style attributes
-        document.querySelectorAll('[style]').forEach(el => {
-          const style = el.getAttribute('style');
-          if (style && style.includes('url(') && style.includes('instagram')) {
-            // Simple string replacement to avoid regex issues
-            let newStyle = style;
-            const urlMatches = style.match(/url\\([^)]+\\)/g);
-            if (urlMatches) {
-              urlMatches.forEach(urlMatch => {
-                const url = urlMatch.replace(/url\\(["']?/, '').replace(/["']?\\)/, '');
-                if (url.includes('instagram') && !url.includes('localhost')) {
-                  newStyle = newStyle.replace(urlMatch, 'url(' + proxyUrl(url) + ')');
-                }
-              });
-              el.setAttribute('style', newStyle);
-            }
-          }
-        });
-      }
-      
-      // Debug: Log images
-      console.log('Instagram Proxy: Checking images...');
-      const images = document.querySelectorAll('img');
-      console.log('Found', images.length, 'images');
-      
-      // Run image fix
-      fixImages();
-      setTimeout(fixImages, 500);
-      setTimeout(fixImages, 1000);
-      setTimeout(fixImages, 2000);
-      setInterval(fixImages, 3000);
-      
-      // Also observe for new images
-      const imgObserver = new MutationObserver(() => {
-        fixImages();
-      });
-      imgObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['src', 'srcset', 'data-src']
-      });
+      console.log('Instagram Proxy: Images embedded as base64');
     </script>
     <script>
       // Aggressively remove ALL login/signup elements
