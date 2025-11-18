@@ -83,16 +83,6 @@ instagram-webview/
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-   npm run electron-build
-   ```
-
-2. The built application will be available in the `dist` folder.
-
-## Usage
-
-1. Enter an Instagram username in the input field
-2. Click "View Profile" to load the profile
-3. Log in to Instagram in the WebView if prompted
 
 ## Notes
 
