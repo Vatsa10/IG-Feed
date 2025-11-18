@@ -3,7 +3,7 @@ import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 
 /**
- * InstagramProxyView component that fetches Instagram screenshot via Puppeteer proxy
+ * InstagramProxyView component that fetches full Instagram HTML via Puppeteer proxy
  * @param {Object} props - Component props
  * @param {string} props.username - Instagram username to fetch
  * @param {Object} props.style - Additional styles
@@ -13,36 +13,33 @@ import ErrorMessage from './ErrorMessage';
 export default function InstagramProxyView({ username, style = {}, onLoad, onError }) {
   const [loadingState, setLoadingState] = useState('loading');
   const [error, setError] = useState(null);
-  const [screenshotUrl, setScreenshotUrl] = useState('');
+  const [htmlContent, setHtmlContent] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const fetchInstagramScreenshot = async () => {
+    const fetchInstagramContent = async () => {
       setLoadingState('loading');
       setError(null);
-      setScreenshotUrl('');
+      setHtmlContent('');
 
       try {
-        console.log('Fetching Instagram screenshot for:', username);
+        console.log('Fetching Instagram content for:', username);
         
-        // Use screenshot endpoint to avoid CORS issues
-        const url = `http://localhost:5000/api/instagram/${username}/screenshot?t=${Date.now()}`;
-        
-        // Test if server is reachable
-        const response = await fetch(url);
+        const response = await fetch(`http://localhost:5000/api/instagram/${username}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        setScreenshotUrl(url);
+        const html = await response.text();
+        setHtmlContent(html);
         setLoadingState('success');
         
         if (onLoad) {
           onLoad();
         }
       } catch (err) {
-        console.error('Error fetching Instagram screenshot:', err);
+        console.error('Error fetching Instagram content:', err);
         setError('Failed to load Instagram profile. Make sure the proxy server is running (npm run server).');
         setLoadingState('error');
         
@@ -53,7 +50,7 @@ export default function InstagramProxyView({ username, style = {}, onLoad, onErr
     };
 
     if (username) {
-      fetchInstagramScreenshot();
+      fetchInstagramContent();
     }
   }, [username, refreshKey, onLoad, onError]);
 
@@ -66,9 +63,9 @@ export default function InstagramProxyView({ username, style = {}, onLoad, onErr
       {/* Loading State */}
       {loadingState === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-10">
-          <LoadingSpinner message="Capturing Instagram profile..." size="lg" />
+          <LoadingSpinner message="Loading full Instagram profile..." size="lg" />
           <p className="absolute bottom-20 text-sm text-gray-500 dark:text-gray-400">
-            This may take 10-20 seconds...
+            This may take 15-30 seconds...
           </p>
         </div>
       )}
@@ -102,19 +99,18 @@ export default function InstagramProxyView({ username, style = {}, onLoad, onErr
         </div>
       )}
 
-      {/* Screenshot Image */}
-      {loadingState === 'success' && screenshotUrl && (
-        <div className="w-full h-full overflow-auto bg-white dark:bg-gray-900 flex items-start justify-center p-4">
-          <img 
-            src={screenshotUrl}
-            alt={`Instagram profile for ${username}`}
-            className="max-w-full h-auto shadow-lg rounded-lg"
-            onError={() => {
-              setError('Failed to load screenshot');
-              setLoadingState('error');
-            }}
-          />
-        </div>
+      {/* Full HTML Content with proxied resources */}
+      {loadingState === 'success' && htmlContent && (
+        <iframe
+          srcDoc={htmlContent}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+          }}
+          sandbox="allow-scripts allow-same-origin"
+          title={`Instagram profile for ${username}`}
+        />
       )}
     </div>
   );
