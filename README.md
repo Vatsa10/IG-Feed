@@ -20,7 +20,7 @@ A modern web application that displays Instagram profiles with a clean, responsi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/instagram-webview.git
+   git clone https://github.com/Vatsa10/IG-Feed 
    cd instagram-webview
    ```
 
