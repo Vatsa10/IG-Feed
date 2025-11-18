@@ -111,6 +111,48 @@ function rewriteHTML(html, baseUrl) {
     `<head><base href="${baseUrl}">`
   );
 
+  // Inject script to remove login modals on client side
+  const modalRemovalScript = `
+    <script>
+      // Remove login modals continuously
+      function removeLoginModals() {
+        // Remove dialog modals
+        const modals = document.querySelectorAll('[role="dialog"]');
+        modals.forEach(modal => {
+          const text = modal.textContent || '';
+          if (text.includes('Log in') || text.includes('Sign up') || text.includes('Not now') || text.includes('Save your login info')) {
+            modal.remove();
+          }
+        });
+        
+        // Remove overlays
+        const overlays = document.querySelectorAll('[role="presentation"]');
+        overlays.forEach(overlay => overlay.remove());
+        
+        // Re-enable scrolling
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+      }
+      
+      // Run immediately
+      removeLoginModals();
+      
+      // Run after DOM loads
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeLoginModals);
+      }
+      
+      // Run periodically to catch dynamically added modals
+      setInterval(removeLoginModals, 1000);
+      
+      // Observe DOM changes
+      const observer = new MutationObserver(removeLoginModals);
+      observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+  `;
+  
+  html = html.replace('</body>', `${modalRemovalScript}</body>`);
+
   return html;
 }
 
@@ -145,6 +187,58 @@ app.get('/api/instagram/:username', async (req, res) => {
     
     // Wait for content to load
     await page.waitForSelector('main', { timeout: 10000 }).catch(() => {});
+    
+    // Close login modal if it appears
+    try {
+      // Wait a bit for modal to appear
+      await page.waitForTimeout(2000);
+      
+      // Try to find and click "Not Now" or close button on login modal
+      const closeButtons = [
+        'button:has-text("Not Now")',
+        'button:has-text("Not now")',
+        'button[aria-label="Close"]',
+        'svg[aria-label="Close"]',
+        'a[role="button"]:has-text("Not Now")',
+        'div[role="button"]:has-text("Not Now")',
+      ];
+      
+      for (const selector of closeButtons) {
+        try {
+          const button = await page.$(selector);
+          if (button) {
+            await button.click();
+            console.log('Closed login modal');
+            await page.waitForTimeout(1000);
+            break;
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+      
+      // Alternative: Remove modal elements directly from DOM
+      await page.evaluate(() => {
+        // Remove login modal overlays
+        const modals = document.querySelectorAll('[role="dialog"]');
+        modals.forEach(modal => {
+          const text = modal.textContent || '';
+          if (text.includes('Log in') || text.includes('Sign up') || text.includes('Not now')) {
+            modal.remove();
+          }
+        });
+        
+        // Remove backdrop/overlay
+        const overlays = document.querySelectorAll('[role="presentation"]');
+        overlays.forEach(overlay => overlay.remove());
+        
+        // Re-enable scrolling
+        document.body.style.overflow = 'auto';
+      });
+      
+    } catch (error) {
+      console.log('No login modal found or already closed');
+    }
     
     // Scroll to load more content
     await page.evaluate(async () => {
