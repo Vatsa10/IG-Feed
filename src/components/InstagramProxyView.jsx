@@ -108,7 +108,7 @@ export default function InstagramProxyView({ username, style = {}, onLoad, onErr
             height: '100%',
             border: 'none',
           }}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
           title={`Instagram profile for ${username}`}
         />
       )}

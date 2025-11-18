@@ -62,20 +62,35 @@ app.get('/proxy', async (req, res) => {
 
 // Function to rewrite URLs in HTML to use our proxy
 function rewriteHTML(html, baseUrl) {
-  // Rewrite image sources
+  const proxyUrl = (url) => {
+    if (!url || url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('http')) {
+      return `http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
+  // Rewrite image sources (including single quotes and no quotes)
   html = html.replace(
-    /src="(https?:\/\/[^"]+)"/g,
-    (match, url) => `src="http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)}"`
+    /src=["']?(https?:\/\/[^"'\s>]+)["']?/gi,
+    (match, url) => `src="${proxyUrl(url)}"`
   );
   
   // Rewrite srcset attributes
   html = html.replace(
-    /srcset="([^"]+)"/g,
+    /srcset=["']([^"']+)["']/gi,
     (match, srcset) => {
       const rewritten = srcset.split(',').map(part => {
-        const [url, descriptor] = part.trim().split(' ');
-        if (url.startsWith('http')) {
-          return `http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)} ${descriptor || ''}`;
+        const trimmed = part.trim();
+        const spaceIndex = trimmed.lastIndexOf(' ');
+        if (spaceIndex > 0) {
+          const url = trimmed.substring(0, spaceIndex);
+          const descriptor = trimmed.substring(spaceIndex + 1);
+          if (url.startsWith('http')) {
+            return `${proxyUrl(url)} ${descriptor}`;
+          }
+        } else if (trimmed.startsWith('http')) {
+          return proxyUrl(trimmed);
         }
         return part;
       }).join(', ');
@@ -83,26 +98,50 @@ function rewriteHTML(html, baseUrl) {
     }
   );
   
-  // Rewrite CSS background images
+  // Rewrite CSS background images in style attributes
   html = html.replace(
-    /url\((https?:\/\/[^)]+)\)/g,
-    (match, url) => `url(http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)})`
+    /style=["']([^"']*url\([^)]+\)[^"']*)["']/gi,
+    (match, styleContent) => {
+      const rewritten = styleContent.replace(
+        /url\(["']?(https?:\/\/[^"')]+)["']?\)/gi,
+        (m, url) => `url(${proxyUrl(url)})`
+      );
+      return `style="${rewritten}"`;
+    }
   );
   
-  // Rewrite link hrefs for stylesheets
+  // Rewrite CSS background images in style tags
   html = html.replace(
-    /<link([^>]*href=["'](https?:\/\/[^"']+)["'][^>]*)>/g,
+    /<style[^>]*>([\s\S]*?)<\/style>/gi,
+    (match, css) => {
+      const rewritten = css.replace(
+        /url\(["']?(https?:\/\/[^"')]+)["']?\)/gi,
+        (m, url) => `url(${proxyUrl(url)})`
+      );
+      return match.replace(css, rewritten);
+    }
+  );
+  
+  // Rewrite link hrefs for stylesheets and icons
+  html = html.replace(
+    /<link([^>]*href=["'](https?:\/\/[^"']+)["'][^>]*)>/gi,
     (match, attrs, url) => {
-      return match.replace(url, `http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)}`);
+      return match.replace(url, proxyUrl(url));
     }
   );
   
   // Rewrite script sources
   html = html.replace(
-    /<script([^>]*src=["'](https?:\/\/[^"']+)["'][^>]*)>/g,
+    /<script([^>]*src=["'](https?:\/\/[^"']+)["'][^>]*)>/gi,
     (match, attrs, url) => {
-      return match.replace(url, `http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)}`);
+      return match.replace(url, proxyUrl(url));
     }
+  );
+
+  // Rewrite data-src attributes (lazy loading)
+  html = html.replace(
+    /data-src=["']?(https?:\/\/[^"'\s>]+)["']?/gi,
+    (match, url) => `data-src="${proxyUrl(url)}"`
   );
 
   // Add base tag to handle relative URLs
@@ -111,8 +150,69 @@ function rewriteHTML(html, baseUrl) {
     `<head><base href="${baseUrl}">`
   );
 
-  // Inject script to remove login modals on client side
+  // Inject script to remove login modals and fix images on client side
   const modalRemovalScript = `
+    <script>
+      // Proxy URL helper
+      const proxyUrl = (url) => {
+        if (!url || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('http://localhost')) return url;
+        if (url.startsWith('http')) {
+          return 'http://localhost:${PORT}/proxy?url=' + encodeURIComponent(url);
+        }
+        return url;
+      };
+      
+      // Fix images that failed to load
+      function fixImages() {
+        document.querySelectorAll('img').forEach(img => {
+          // Fix src
+          if (img.src && img.src.startsWith('https://instagram') && !img.src.includes('localhost')) {
+            img.src = proxyUrl(img.src);
+          }
+          
+          // Fix srcset
+          if (img.srcset && img.srcset.includes('https://instagram')) {
+            const newSrcset = img.srcset.split(',').map(part => {
+              const trimmed = part.trim();
+              const spaceIndex = trimmed.lastIndexOf(' ');
+              if (spaceIndex > 0) {
+                const url = trimmed.substring(0, spaceIndex);
+                const descriptor = trimmed.substring(spaceIndex + 1);
+                if (url.startsWith('https://instagram')) {
+                  return proxyUrl(url) + ' ' + descriptor;
+                }
+              }
+              return part;
+            }).join(', ');
+            img.srcset = newSrcset;
+          }
+          
+          // Fix data-src (lazy loading)
+          if (img.dataset.src && img.dataset.src.startsWith('https://instagram')) {
+            img.dataset.src = proxyUrl(img.dataset.src);
+            img.src = img.dataset.src;
+          }
+        });
+        
+        // Fix background images
+        document.querySelectorAll('[style*="background"]').forEach(el => {
+          const style = el.getAttribute('style');
+          if (style && style.includes('https://instagram')) {
+            const newStyle = style.replace(
+              /url\(["']?(https:\/\/instagram[^"')]+)["']?\)/gi,
+              (match, url) => 'url(' + proxyUrl(url) + ')'
+            );
+            el.setAttribute('style', newStyle);
+          }
+        });
+      }
+      
+      // Run image fix
+      fixImages();
+      setTimeout(fixImages, 1000);
+      setTimeout(fixImages, 2000);
+      setInterval(fixImages, 3000);
+    </script>
     <script>
       // Aggressively remove ALL login/signup elements
       function removeLoginModals() {
@@ -390,6 +490,5 @@ app.listen(PORT, () => {
   console.log(`Instagram Proxy Server running on http://localhost:${PORT}`);
   console.log(`API endpoints:`);
   console.log(`  - GET /api/instagram/:username`);
-  console.log(`  - GET /api/instagram/:username/screenshot`);
   console.log(`  - GET /api/health`);
 });
