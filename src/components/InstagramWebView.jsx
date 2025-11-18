@@ -9,7 +9,8 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
   const timeoutRef = useRef(null);
   const iframeRef = useRef(null);
 
-  const instagramUrl = `https://www.instagram.com/${username}/`;
+  // Use Instagram's embed endpoint which allows iframe embedding
+  const instagramUrl = `https://www.instagram.com/${username}/embed/`;
 
   useEffect(() => {
     // Reset state when username changes
@@ -110,7 +111,7 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
           {/* Fallback link */}
           <div className="mt-4 text-center">
             <a
-              href={instagramUrl}
+              href={`https://www.instagram.com/${username}/`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline text-sm"
@@ -121,13 +122,13 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
         </div>
       )}
 
-      {/* Iframe - always rendered but hidden during loading/error */}
+      {/* Iframe using Instagram's embed endpoint */}
       <iframe
         ref={iframeRef}
         src={instagramUrl}
         onLoad={handleIframeLoad}
         onError={handleIframeError}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        allow="encrypted-media"
         style={{
           width: '100%',
           height: '100%',
