@@ -1,14 +1,18 @@
-# Instagram WebView
+# Instagram Profile Viewer
 
-A modern web application that displays Instagram profiles with a clean, responsive interface.
+A modern, responsive web application for viewing Instagram profiles with a clean interface, dark mode support, and enhanced user experience.
 
 ## Features
 
-- View public Instagram profiles
-- Mobile-optimized responsive design
-- Fast development with Vite
-- Styled with Tailwind CSS
-- Built with React 18
+- Search and view Instagram profiles
+-  Dark/Light theme toggle with persistent preferences
+-  Fully responsive design (mobile, tablet, desktop)
+-  Fast development with Vite
+-  Styled with Tailwind CSS
+-  Built with React 18
+-  Accessible UI components
+-  Loading states and error handling
+-  Input validation for usernames
 
 ## Prerequisites
 
@@ -40,7 +44,7 @@ A modern web application that displays Instagram profiles with a clean, responsi
 
 2. Open your browser and navigate to:
    ```
-   http://localhost:5173
+   http://localhost:3000
    ```
 
 ### Building for Production
@@ -60,35 +64,65 @@ A modern web application that displays Instagram profiles with a clean, responsi
 - [Vite](https://vitejs.dev/) - Next Generation Frontend Tooling
 - [React 18](https://reactjs.org/) - A JavaScript library for building user interfaces
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
-- [TypeScript](https://www.typescriptlang.org/) - TypeScript is a typed superset of JavaScript
+- [React Context API](https://reactjs.org/docs/context.html) - State management for theme
+- Custom Hooks - useLocalStorage for persistent preferences
 
 ## Project Structure
 
 ```
-instagram-webview/
-├── public/          # Static files
-├── src/             # Source files
-│   ├── components/  # React components
-│   ├── styles/      # Global styles
-│   ├── App.jsx      # Main App component
-│   └── main.jsx     # Application entry point
+instagram-profile-viewer/
+├── src/
+│   ├── components/       # React components
+│   │   ├── ErrorMessage.jsx
+│   │   ├── InstagramWebView.jsx
+│   │   ├── LoadingSpinner.jsx
+│   │   ├── SearchForm.jsx
+│   │   └── ThemeToggle.jsx
+│   ├── contexts/         # React contexts
+│   │   └── ThemeContext.jsx
+│   ├── hooks/            # Custom hooks
+│   │   └── useLocalStorage.jsx
+│   ├── utils/            # Utility functions
+│   │   └── validation.js
+│   ├── App.jsx           # Main App component
+│   ├── index.css         # Global styles
+│   └── index.js          # Application entry point
 ├── .gitignore
 ├── index.html
 ├── package.json
 ├── postcss.config.js
+├── README.md
 ├── tailwind.config.js
 └── vite.config.js
 ```
 
-## License
+## Usage
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+1. Enter an Instagram username in the search field
+2. Click "Search" or press Enter
+3. View the Instagram profile in the embedded viewer
+4. Toggle between light and dark themes using the theme button
+5. The app remembers your theme preference
+
+## Components
+
+- **SearchForm** - Username search with validation
+- **InstagramWebView** - Embedded Instagram profile viewer with loading states
+- **ThemeToggle** - Dark/Light mode switcher
+- **LoadingSpinner** - Loading indicator
+- **ErrorMessage** - Error display with retry functionality
+- **ThemeContext** - Global theme state management
 
 ## Notes
 
-- This application uses Instagram's mobile web interface for better compatibility
-- Some features may be limited due to Instagram's restrictions
-- You need to be logged in to view private profiles
+- This application embeds Instagram's web interface
+- Some features may be limited due to Instagram's restrictions and browser security policies
+- Private profiles require Instagram login
+- The app uses localStorage to persist theme preferences
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
