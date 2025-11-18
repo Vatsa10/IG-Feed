@@ -38,12 +38,26 @@ app.get('/proxy', async (req, res) => {
   }
 
   try {
-    const response = await fetch(url, {
+    // Decode any HTML entities in the URL
+    const decodedUrl = url.replace(/&amp;/g, '&');
+    console.log('Proxying:', decodedUrl.substring(0, 100) + '...');
+    
+    const response = await fetch(decodedUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
         'Referer': 'https://www.instagram.com/',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Fetch-Dest': 'image',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site',
       },
     });
+
+    if (!response.ok) {
+      console.error('Proxy fetch failed:', response.status, url);
+      return res.status(response.status).send('Failed to fetch resource');
+    }
 
     // Forward the content type
     const contentType = response.headers.get('content-type');
@@ -51,19 +65,28 @@ app.get('/proxy', async (req, res) => {
       res.set('Content-Type', contentType);
     }
 
+    // Add CORS headers
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cache-Control', 'public, max-age=3600');
+
     // Forward the response
     const buffer = await response.buffer();
     res.send(buffer);
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('Proxy error for', url, ':', error.message);
     res.status(500).send('Failed to proxy resource');
   }
 });
 
 // Function to rewrite URLs in HTML to use our proxy
 function rewriteHTML(html, baseUrl) {
+  // First, decode HTML entities in URLs (&amp; -> &)
+  html = html.replace(/&amp;/g, '&');
+  
   const proxyUrl = (url) => {
     if (!url || url.startsWith('data:') || url.startsWith('blob:')) return url;
+    // Decode HTML entities in the URL
+    url = url.replace(/&amp;/g, '&');
     if (url.startsWith('http')) {
       return `http://localhost:${PORT}/proxy?url=${encodeURIComponent(url)}`;
     }
@@ -166,21 +189,26 @@ function rewriteHTML(html, baseUrl) {
       function fixImages() {
         document.querySelectorAll('img').forEach(img => {
           // Fix src
-          if (img.src && img.src.startsWith('https://instagram') && !img.src.includes('localhost')) {
-            img.src = proxyUrl(img.src);
+          if (img.src && img.src.includes('instagram') && !img.src.includes('localhost')) {
+            const originalSrc = img.getAttribute('src');
+            if (originalSrc && originalSrc.startsWith('http') && !originalSrc.includes('localhost')) {
+              img.src = proxyUrl(originalSrc);
+            }
           }
           
           // Fix srcset
-          if (img.srcset && img.srcset.includes('https://instagram')) {
+          if (img.srcset && img.srcset.includes('instagram')) {
             const newSrcset = img.srcset.split(',').map(part => {
               const trimmed = part.trim();
               const spaceIndex = trimmed.lastIndexOf(' ');
               if (spaceIndex > 0) {
                 const url = trimmed.substring(0, spaceIndex);
                 const descriptor = trimmed.substring(spaceIndex + 1);
-                if (url.startsWith('https://instagram')) {
+                if (url.includes('instagram') && !url.includes('localhost')) {
                   return proxyUrl(url) + ' ' + descriptor;
                 }
+              } else if (trimmed.includes('instagram') && !trimmed.includes('localhost')) {
+                return proxyUrl(trimmed);
               }
               return part;
             }).join(', ');
@@ -188,30 +216,54 @@ function rewriteHTML(html, baseUrl) {
           }
           
           // Fix data-src (lazy loading)
-          if (img.dataset.src && img.dataset.src.startsWith('https://instagram')) {
+          if (img.dataset.src && img.dataset.src.includes('instagram') && !img.dataset.src.includes('localhost')) {
             img.dataset.src = proxyUrl(img.dataset.src);
             img.src = img.dataset.src;
           }
         });
         
-        // Fix background images
-        document.querySelectorAll('[style*="background"]').forEach(el => {
+        // Fix background images in style attributes
+        document.querySelectorAll('[style]').forEach(el => {
           const style = el.getAttribute('style');
-          if (style && style.includes('https://instagram')) {
-            const newStyle = style.replace(
-              /url\(["']?(https:\/\/instagram[^"')]+)["']?\)/gi,
-              (match, url) => 'url(' + proxyUrl(url) + ')'
-            );
-            el.setAttribute('style', newStyle);
+          if (style && style.includes('url(') && style.includes('instagram')) {
+            // Simple string replacement to avoid regex issues
+            let newStyle = style;
+            const urlMatches = style.match(/url\\([^)]+\\)/g);
+            if (urlMatches) {
+              urlMatches.forEach(urlMatch => {
+                const url = urlMatch.replace(/url\\(["']?/, '').replace(/["']?\\)/, '');
+                if (url.includes('instagram') && !url.includes('localhost')) {
+                  newStyle = newStyle.replace(urlMatch, 'url(' + proxyUrl(url) + ')');
+                }
+              });
+              el.setAttribute('style', newStyle);
+            }
           }
         });
       }
       
+      // Debug: Log images
+      console.log('Instagram Proxy: Checking images...');
+      const images = document.querySelectorAll('img');
+      console.log('Found', images.length, 'images');
+      
       // Run image fix
       fixImages();
+      setTimeout(fixImages, 500);
       setTimeout(fixImages, 1000);
       setTimeout(fixImages, 2000);
       setInterval(fixImages, 3000);
+      
+      // Also observe for new images
+      const imgObserver = new MutationObserver(() => {
+        fixImages();
+      });
+      imgObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'srcset', 'data-src']
+      });
     </script>
     <script>
       // Aggressively remove ALL login/signup elements
