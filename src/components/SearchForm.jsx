@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { validateUsername } from '../utils/validation';
 
 /**
@@ -11,6 +11,11 @@ import { validateUsername } from '../utils/validation';
 export default function SearchForm({ onSearch, isLoading = false, initialValue = '' }) {
   const [inputValue, setInputValue] = useState(initialValue);
   const [validationError, setValidationError] = useState(null);
+
+  // Update input value when initialValue prop changes
+  useEffect(() => {
+    setInputValue(initialValue);
+  }, [initialValue]);
 
   /**
    * Handle form submission

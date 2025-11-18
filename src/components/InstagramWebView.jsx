@@ -18,19 +18,22 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
     setError(null);
     setTimeoutReached(false);
 
-    // Set 10-second timeout to detect load failures
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set 15-second timeout to detect load failures
     timeoutRef.current = setTimeout(() => {
-      if (loadingState === 'loading') {
-        setTimeoutReached(true);
-        setLoadingState('error');
-        setError('Loading is taking longer than expected. The profile may not be available');
-        console.error('Instagram iframe load timeout after 10 seconds');
-        
-        if (onError) {
-          onError(new Error('Load timeout'));
-        }
+      setTimeoutReached(true);
+      setLoadingState('error');
+      setError('Loading is taking longer than expected. The profile may not be available');
+      console.error('Instagram iframe load timeout after 15 seconds');
+      
+      if (onError) {
+        onError(new Error('Load timeout'));
       }
-    }, 10000);
+    }, 15000);
 
     // Cleanup timeout on unmount or username change
     return () => {
@@ -38,9 +41,11 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [username]);
+  }, [username, onError]);
 
   const handleIframeLoad = () => {
+    console.log('Instagram iframe loaded successfully');
+    
     // Clear timeout on successful load
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -135,7 +140,8 @@ const InstagramWebView = ({ username, style = {}, onLoad, onError }) => {
           border: 'none',
           borderRadius: '8px',
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          display: loadingState === 'success' ? 'block' : 'none'
+          visibility: loadingState === 'success' ? 'visible' : 'hidden',
+          position: loadingState === 'success' ? 'relative' : 'absolute'
         }}
         title={`Instagram profile for ${username}`}
       />
