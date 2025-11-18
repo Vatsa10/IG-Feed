@@ -463,10 +463,54 @@ app.get('/api/instagram/:username', async (req, res) => {
     // Wait a bit for lazy-loaded images
     await page.waitForTimeout(2000);
     
-    // Get the rendered HTML
+    // Convert all images to base64 data URLs (bypass CDN restrictions)
+    await page.evaluate(async () => {
+      const convertImageToDataURL = async (img) => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          ctx.drawImage(img, 0, 0);
+          return canvas.toDataURL('image/jpeg', 0.9);
+        } catch (e) {
+          console.error('Failed to convert image:', e);
+          return null;
+        }
+      };
+
+      const images = document.querySelectorAll('img');
+      console.log(`Converting ${images.length} images to base64...`);
+      
+      for (const img of images) {
+        if (img.src && img.src.startsWith('http') && img.complete && img.naturalWidth > 0) {
+          try {
+            const dataURL = await convertImageToDataURL(img);
+            if (dataURL) {
+              img.src = dataURL;
+              img.removeAttribute('srcset');
+              img.removeAttribute('data-src');
+            }
+          } catch (e) {
+            console.error('Error converting image:', e);
+          }
+        }
+      }
+      
+      // Also convert background images
+      document.querySelectorAll('[style*="background-image"]').forEach(el => {
+        const style = el.getAttribute('style');
+        if (style && style.includes('url(')) {
+          // Remove background images that reference external URLs
+          el.style.backgroundImage = 'none';
+        }
+      });
+    });
+    
+    // Get the rendered HTML with base64 images
     let html = await page.content();
     
-    // Rewrite URLs to use our proxy
+    // Rewrite remaining URLs to use our proxy (for CSS, JS, etc.)
     html = rewriteHTML(html, `https://www.instagram.com/${username}/`);
     
     // Close the page
