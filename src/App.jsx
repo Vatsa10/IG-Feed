@@ -2,6 +2,7 @@ import { useState } from 'react';
 import InstagramWebView from './components/InstagramWebView';
 import SearchForm from './components/SearchForm';
 import ThemeToggle from './components/ThemeToggle';
+import DeviceFrame from './components/DeviceFrame';
 
 function App() {
   const [username, setUsername] = useState('instagram');
@@ -41,17 +42,15 @@ function App() {
           />
         </div>
 
-        {/* Instagram WebView container */}
-        <div className="w-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg transition-colors duration-300">
-          <div className="w-full" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
-            <InstagramWebView 
-              username={username} 
-              style={{ height: '100%' }}
-              onLoad={handleLoad}
-              onError={handleError}
-            />
-          </div>
-        </div>
+        {/* Instagram WebView in Device Frame */}
+        <DeviceFrame>
+          <InstagramWebView 
+            username={username} 
+            style={{ height: '100%', width: '100%' }}
+            onLoad={handleLoad}
+            onError={handleError}
+          />
+        </DeviceFrame>
         
         {/* Footer note */}
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-6 transition-colors duration-300">
