@@ -179,7 +179,7 @@ function rewriteHTML(html, baseUrl) {
       console.log('Instagram Proxy: Images embedded as base64');
     </script>
     <script>
-      // Aggressively remove ALL login/signup elements
+      // Aggressively remove ALL login/signup elements and black overlays
       function removeLoginModals() {
         try {
           // Remove all dialogs and modals
@@ -206,13 +206,33 @@ function rewriteHTML(html, baseUrl) {
             });
           });
           
-          // Remove fixed overlays with high z-index
+          // Remove fixed overlays with high z-index and black backdrops
           document.querySelectorAll('div').forEach(div => {
             const style = window.getComputedStyle(div);
-            if (style.position === 'fixed' && parseInt(style.zIndex) > 100) {
+            
+            if (style.position === 'fixed') {
+              const zIndex = parseInt(style.zIndex) || 0;
               const text = div.textContent || '';
-              if (text.includes('Log') || text.includes('Sign') || text.includes('login') || text.length < 500) {
+              
+              // Remove high z-index overlays with login text
+              if (zIndex > 100 && (text.includes('Log') || text.includes('Sign') || text.includes('login') || text.length < 500)) {
                 div.remove();
+                return;
+              }
+              
+              // Remove black/dark overlays (backdrop)
+              const bgColor = style.backgroundColor;
+              const opacity = parseFloat(style.opacity) || 1;
+              
+              // Check for black/dark backgrounds (common for modal backdrops)
+              if (bgColor && (
+                bgColor.includes('rgba(0, 0, 0') || 
+                bgColor.includes('rgb(0, 0, 0)') ||
+                bgColor === 'black'
+              ) && opacity > 0.3 && zIndex > 0) {
+                console.log('Removing black overlay:', bgColor, 'opacity:', opacity, 'z-index:', zIndex);
+                div.remove();
+                return;
               }
             }
           });
@@ -336,13 +356,34 @@ app.get('/api/instagram/:username', async (req, res) => {
       removeByText('Not now');
       removeByText('Save your login');
       
-      // Remove fixed/sticky overlays
+      // Remove fixed/sticky overlays and black backdrops
       document.querySelectorAll('div').forEach(div => {
         const style = window.getComputedStyle(div);
-        if (style.position === 'fixed' && style.zIndex > 100) {
+        
+        // Remove fixed overlays with high z-index
+        if (style.position === 'fixed') {
+          const zIndex = parseInt(style.zIndex) || 0;
           const text = div.textContent || '';
-          if (text.includes('Log') || text.includes('Sign') || text.length < 500) {
+          
+          // Remove if it's a high z-index overlay
+          if (zIndex > 100 && (text.includes('Log') || text.includes('Sign') || text.length < 500)) {
             div.remove();
+            return;
+          }
+          
+          // Remove black/dark overlays (backdrop)
+          const bgColor = style.backgroundColor;
+          const opacity = parseFloat(style.opacity) || 1;
+          
+          // Check for black/dark backgrounds with opacity (common for overlays)
+          if (bgColor && (
+            bgColor.includes('rgba(0, 0, 0') || 
+            bgColor.includes('rgb(0, 0, 0)') ||
+            bgColor === 'black'
+          ) && opacity > 0.3 && zIndex > 0) {
+            console.log('Removing black overlay:', bgColor, 'opacity:', opacity, 'z-index:', zIndex);
+            div.remove();
+            return;
           }
         }
       });
